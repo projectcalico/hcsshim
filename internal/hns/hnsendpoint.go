@@ -130,6 +130,25 @@ func (endpoint *HNSEndpoint) Update() (*HNSEndpoint, error) {
 	return endpoint, err
 }
 
+// The following code is added for Calico.
+// Some CNI plugins does not clear endpoint properly when a pod has been teared down.
+// This function can be used to determine if an endpoint is active or not.
+type endpointAttachContainersInfo struct {
+	SharedContainers []string `json:",omitempty"`
+}
+
+func (endpoint *HNSEndpoint) GetAttachedContainerIDs() ([]string, error) {
+	attachInfo := endpointAttachContainersInfo{}
+	err := hnsCall("GET", "/endpoints/"+endpoint.Id, "", &attachInfo)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return attachInfo.SharedContainers, nil
+}
+// The above code is added for Calico.
+
 // ApplyACLPolicy applies a set of ACL Policies on the Endpoint
 func (endpoint *HNSEndpoint) ApplyACLPolicy(policies ...*ACLPolicy) error {
 	operation := "ApplyACLPolicy"
